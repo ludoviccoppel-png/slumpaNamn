@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NamnSlumparen - Klass 7B</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        .slot-window {
+            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 font-sans">
+
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <!-- HEADER -->
+        <header class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl font-bold">
+                    <i class="fa-solid fa-dice"></i>
+                </div>
+                <h1 class="text-xl font-black text-amber-400">NamnSlumparen</h1>
+            </div>
+            <div class="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-sm">
+                <span class="text-slate-400">Aktiv grupp: </span>
+                <span id="active-group-label" class="font-bold text-amber-300">Klass 7B</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- VÄNSTER: SLUMPA / DELA IN -->
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between min-h-[500px]">
+                
+                <!-- FLIKAR -->
+                <div class="flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 max-w-md mx-auto w-full mb-6">
+                    <button id="btn-tab-spin" class="flex-1 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 text-white transition-all">
+                        <i class="fa-solid fa-dice mr-1"></i> Slumpa Namn
+                    </button>
+                    <button id="btn-tab-group" class="flex-1 py-2.5 rounded-xl font-bold text-sm text-slate-400 hover:text-white transition-all">
+                        <i class="fa-solid fa-users-rectangle mr-1"></i> Bygga Grupper
+                    </button>
+                </div>
+
+                <!-- FLIK 1: SLUMPA NAMN -->
+                <div id="section-spin" class="space-y-6 text-center">
+                    
+                    <div id="winner-box" class="hidden bg-amber-500/10 border-2 border-amber-400 rounded-2xl p-4">
+                        <div class="text-xs uppercase font-extrabold text-amber-400">🎉 Draget Namn 🎉</div>
+                        <div id="winner-name" class="text-4xl font-black text-amber-300 mt-1"></div>
+                    </div>
+
+                    <div class="h-32 bg-slate-950 rounded-2xl border border-slate-800 relative overflow-hidden slot-window flex items-center justify-center">
+                        <div id="reel-display" class="text-2xl font-bold text-slate-300">
+                            Tryck på Slumpa Namn!
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 max-w-md mx-auto">
+                        <button id="btn-spin" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-4 rounded-2xl text-lg shadow-lg transition-all">
+                            SLUMPA NAMN
+                        </button>
+                        <button id="btn-reset-drawn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 rounded-2xl font-bold border border-slate-700">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex justify-center items-center gap-2 text-sm text-slate-300">
+                        <input type="checkbox" id="toggle-norepeat" class="w-4 h-4" checked>
+                        <label for="toggle-norepeat">Slumpa utan återställning (tills alla dragits)</label>
+                    </div>
+                </div>
+
+                <!-- FLIK 2: BYGGA GRUPPER -->
+                <div id="section-groups" class="hidden space-y-4">
+                    <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-4 items-end">
+                        <div class="flex-1 min-w-[140px]">
+                            <label class="text-xs text-slate-400 block mb-1">Metod</label>
+                            <select id="split-mode" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-sm">
+                                <option value="count">Antal grupper</option>
+                                <option value="size">Elever per grupp</option>
+                            </select>
+                        </div>
+                        <div class="w-24">
+                            <label id="split-label" class="text-xs text-slate-400 block mb-1">Antal</label>
+                            <input type="number" id="split-val" value="4" min="1" max="20" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-sm">
+                        </div>
+                        <button id="btn-make-subgroups" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-sm">
+                            Skapa Grupper
+                        </button>
+                    </div>
+
+                    <div id="subgroups-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
+                </div>
+
+                <!-- STATISTIK & HISTORIK -->
+                <div class="mt-6 pt-4 border-t border-slate-800 grid grid-cols-2 gap-4 text-xs">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">Närvarande kvar i potten:</span>
+                        <span id="count-remaining" class="font-bold text-emerald-400 ml-1">0</span>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">Dragna:</span>
+                        <span id="count-drawn" class="font-bold text-purple-400 ml-1">0</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- HÖGER: HANTERA HUVUDGRUPPER OCH FRÅNVARO -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+                
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 class="font-bold text-white"><i class="fa-solid fa-users text-amber-400 mr-2"></i>Klasser / Grupper</h2>
+                    <button id="btn-open-modal" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl">
+                        + Ny Grupp
+                    </button>
+                </div>
+
+                <div>
+                    <select id="select-group" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm font-bold text-amber-300">
+                    </select>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="btn-edit-group" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-bold py-2 rounded-xl">Redigera</button>
+                    <button id="btn-delete-group" class="bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold px-3 py-2 rounded-xl">Radera</button>
+                </div>
+
+                <button id="btn-reset-default" class="w-full bg-slate-950 hover:bg-slate-800 text-slate-400 text-xs py-2 rounded-xl border border-slate-800">
+                    Återställ standardgrupp (7B - 28 namn)
+                </button>
+
+                <div class="pt-3 border-t border-slate-800 space-y-2">
+                    <div class="text-xs text-slate-400 flex justify-between items-center">
+                        <span>Närvarande elever:</span>
+                        <span class="font-bold text-amber-300"><span id="present-students-count">0</span> / <span id="total-students-count">0</span></span>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-slate-500 px-1">
+                        <span>Bocka ur frånvarande elever:</span>
+                        <button id="btn-toggle-all-presence" class="text-indigo-400 hover:underline">Markera alla</button>
+                    </div>
+                    <div id="students-list" class="max-h-64 overflow-y-auto bg-slate-950 p-2 rounded-xl border border-slate-800 space-y-1 text-xs">
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL FÖR SKAPA/REDIGERA GRUPP -->
+    <div id="modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <h3 id="modal-title" class="font-bold text-white">Skapa Ny Grupp</h3>
+                <button id="btn-close-modal" class="text-slate-400 text-xl">×</button>
+            </div>
+            
+            <input type="hidden" id="modal-edit-id" value="">
+
+            <div>
+                <label class="text-xs text-slate-400 block mb-1">Gruppnamn</label>
+                <input type="text" id="modal-input-name" placeholder="Ex. Klass 7B" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm">
+            </div>
+
+            <div>
+                <label class="text-xs text-slate-400 block mb-1">Elever (separera med kommatecken eller ny rad)</label>
+                <textarea id="modal-input-names" rows="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm font-mono"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="btn-cancel-modal" class="px-4 py-2 text-xs font-bold text-slate-400">Avbryt</button>
+                <button id="btn-save-modal" class="px-4 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl">Spara Grupp</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CLASS_7B = ["Abduqodir", "Anashid", "Axel", "Lam", "Cecilia", "Elias", "Elise", "Emil", "Havin", "Henry", "Jack", "Jonathan", "Khadijatou", "Kseniya", "Laleh", "Leo", "Lily", "Marlon", "Maximilian", "Mikael", "Nellie", "Ninjin", "Shams", "Sixten B", "Sixten F", "Timmy", "Vera", "Vincent"];
+
+        let appData = {
+            groups: [],
+            activeId: null,
+            drawnMap: {},
+            absentMap: {} // Håller koll på frånvarande elever per grupp
+        };
+
+        const selectGroup = document.getElementById('select-group');
+        const activeGroupLabel = document.getElementById('active-group-label');
+        const studentsList = document.getElementById('students-list');
+        const totalStudentsCount = document.getElementById('total-students-count');
+        const presentStudentsCount = document.getElementById('present-students-count');
+        const countRemaining = document.getElementById('count-remaining');
+        const countDrawn = document.getElementById('count-drawn');
+        const reelDisplay = document.getElementById('reel-display');
+        const winnerBox = document.getElementById('winner-box');
+        const winnerName = document.getElementById('winner-name');
+        const modal = document.getElementById('modal');
+
+        window.onload = function() {
+            loadData();
+            setupEventListeners();
+            render();
+        };
+
+        function loadData() {
+            const saved = localStorage.getItem('namnslump_7b_data_v2');
+            if (saved) {
+                try { appData = JSON.parse(saved); } catch(e) {}
+            }
+            if (!appData.groups || appData.groups.length === 0) {
+                appData.groups = [{ id: '7b', name: 'Klass 7B', names: [...CLASS_7B] }];
+                appData.activeId = '7b';
+                appData.drawnMap = {};
+                appData.absentMap = {};
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('namnslump_7b_data_v2', JSON.stringify(appData));
+        }
+
+        function getActiveGroup() {
+            return appData.groups.find(g => g.id === appData.activeId) || appData.groups[0];
+        }
+
+        function render() {
+            const group = getActiveGroup();
+            appData.activeId = group.id;
+            activeGroupLabel.textContent = group.name;
+
+            selectGroup.innerHTML = '';
+            appData.groups.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.id;
+                opt.textContent = `${g.name} (${g.names.length} st)`;
+                if (g.id === group.id) opt.selected = true;
+                selectGroup.appendChild(opt);
+            });
+
+            const drawn = appData.drawnMap[group.id] || [];
+            const absent = appData.absentMap[group.id] || [];
+
+            studentsList.innerHTML = '';
+            group.names.forEach(name => {
+                const isDrawn = drawn.includes(name);
+                const isAbsent = absent.includes(name);
+
+                const row = document.createElement('div');
+                row.className = `flex items-center justify-between p-1.5 rounded-lg border ${isAbsent ? 'bg-slate-900/40 border-slate-900 text-slate-600 line-through' : (isDrawn ? 'bg-slate-900 text-slate-500 border-slate-800' : 'bg-slate-800 text-slate-200 border-slate-700')}`;
+                
+                row.innerHTML = `
+                    <span class="truncate pr-2">${name} ${isDrawn ? '<i class="fa-solid fa-check text-[10px] text-indigo-400 ml-1"></i>' : ''}</span>
+                    <label class="flex items-center gap-1 cursor-pointer select-none">
+                        <input type="checkbox" ${!isAbsent ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0">
+                    </label>
+                `;
+
+                const checkbox = row.querySelector('input');
+                checkbox.onchange = function() {
+                    if (!appData.absentMap[group.id]) appData.absentMap[group.id] = [];
+                    if (this.checked) {
+                        appData.absentMap[group.id] = appData.absentMap[group.id].filter(n => n !== name);
+                    } else {
+                        if (!appData.absentMap[group.id].includes(name)) {
+                            appData.absentMap[group.id].push(name);
+                        }
+                    }
+                    saveData();
+                    render();
+                };
+
+                studentsList.appendChild(row);
+            });
+
+            const presentStudents = group.names.filter(n => !absent.includes(n));
+            const remainingPresent = presentStudents.filter(n => !drawn.includes(n));
+
+            totalStudentsCount.textContent = group.names.length;
+            presentStudentsCount.textContent = presentStudents.length;
+            countRemaining.textContent = remainingPresent.length;
+            countDrawn.textContent = drawn.length;
+        }
+
+        function setupEventListeners() {
+            document.getElementById('btn-tab-spin').onclick = function() {
+                document.getElementById('section-spin').classList.remove('hidden');
+                document.getElementById('section-groups').classList.add('hidden');
+                this.className = "flex-1 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 text-white transition-all";
+                document.getElementById('btn-tab-group').className = "flex-1 py-2.5 rounded-xl font-bold text-sm text-slate-400 hover:text-white transition-all";
+            };
+
+            document.getElementById('btn-tab-group').onclick = function() {
+                document.getElementById('section-spin').classList.add('hidden');
+                document.getElementById('section-groups').classList.remove('hidden');
+                this.className = "flex-1 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 text-white transition-all";
+                document.getElementById('btn-tab-spin').className = "flex-1 py-2.5 rounded-xl font-bold text-sm text-slate-400 hover:text-white transition-all";
+            };
+
+            selectGroup.onchange = function() {
+                appData.activeId = this.value;
+                winnerBox.classList.add('hidden');
+                reelDisplay.textContent = "Redo!";
+                saveData();
+                render();
+            };
+
+            // Markera / avmarkera alla
+            document.getElementById('btn-toggle-all-presence').onclick = function() {
+                const group = getActiveGroup();
+                const absent = appData.absentMap[group.id] || [];
+                if (absent.length > 0) {
+                    appData.absentMap[group.id] = [];
+                } else {
+                    appData.absentMap[group.id] = [...group.names];
+                }
+                saveData();
+                render();
+            };
+
+            // Slumpa Namn (endast närvarande)
+            document.getElementById('btn-spin').onclick = function() {
+                const group = getActiveGroup();
+                const drawn = appData.drawnMap[group.id] || [];
+                const absent = appData.absentMap[group.id] || [];
+                const noRepeat = document.getElementById('toggle-norepeat').checked;
+                
+                // Filtrera bort frånvarande först
+                const presentNames = group.names.filter(n => !absent.includes(n));
+                let pool = noRepeat ? presentNames.filter(n => !drawn.includes(n)) : [...presentNames];
+                
+                if (presentNames.length === 0) {
+                    alert("Inga elever är markerade som närvarande!");
+                    return;
+                }
+
+                if (pool.length === 0) {
+                    alert("Alla närvarande elever har dragits i den här omgången!");
+                    return;
+                }
+
+                let spins = 0;
+                const timer = setInterval(() => {
+                    reelDisplay.textContent = presentNames[Math.floor(Math.random() * presentNames.length)];
+                    spins++;
+                    if (spins >= 20) {
+                        clearInterval(timer);
+                        const winner = pool[Math.floor(Math.random() * pool.length)];
+                        reelDisplay.textContent = winner;
+                        winnerName.textContent = winner;
+                        winnerBox.classList.remove('hidden');
+
+                        if (noRepeat) {
+                            if (!appData.drawnMap[group.id]) appData.drawnMap[group.id] = [];
+                            appData.drawnMap[group.id].push(winner);
+                        }
+
+                        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+                        saveData();
+                        render();
+                    }
+                }, 60);
+            };
+
+            document.getElementById('btn-reset-drawn').onclick = function() {
+                const group = getActiveGroup();
+                appData.drawnMap[group.id] = [];
+                winnerBox.classList.add('hidden');
+                reelDisplay.textContent = "Redo!";
+                saveData();
+                render();
+            };
+
+            document.getElementById('btn-reset-default').onclick = function() {
+                if (confirm("Vill du nollställa till standard 7B (28 namn)?")) {
+                    appData.groups = [{ id: '7b', name: 'Klass 7B', names: [...CLASS_7B] }];
+                    appData.activeId = '7b';
+                    appData.drawnMap = {};
+                    appData.absentMap = {};
+                    winnerBox.classList.add('hidden');
+                    saveData();
+                    render();
+                }
+            };
+
+            // Bygga smågrupper (endast närvarande)
+            document.getElementById('btn-make-subgroups').onclick = function() {
+                const group = getActiveGroup();
+                const absent = appData.absentMap[group.id] || [];
+                
+                // Endast närvarande hamnar i grupper
+                let names = group.names.filter(n => !absent.includes(n));
+                
+                if (names.length === 0) {
+                    alert("Inga elever är markerade som närvarande för att bilda grupper!");
+                    return;
+                }
+
+                names.sort(() => Math.random() - 0.5);
+
+                const mode = document.getElementById('split-mode').value;
+                const val = parseInt(document.getElementById('split-val').value) || 1;
+
+                let numGroups = mode === 'count' ? val : Math.ceil(names.length / val);
+                numGroups = Math.max(1, Math.min(numGroups, names.length));
+
+                const result = Array.from({ length: numGroups }, () => []);
+                names.forEach((name, i) => result[i % numGroups].push(name));
+
+                const grid = document.getElementById('subgroups-grid');
+                grid.innerHTML = '';
+                result.forEach((g, idx) => {
+                    const card = document.createElement('div');
+                    card.className = "bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs";
+                    card.innerHTML = `<div class="font-bold text-amber-400 mb-1">Grupp ${idx + 1} (${g.length})</div>` + 
+                        g.map(n => `<div class="text-slate-300">• ${n}</div>`).join('');
+                    grid.appendChild(card);
+                });
+            };
+
+            document.getElementById('btn-open-modal').onclick = function() {
+                document.getElementById('modal-title').textContent = "Skapa Ny Grupp";
+                document.getElementById('modal-edit-id').value = "";
+                document.getElementById('modal-input-name').value = "";
+                document.getElementById('modal-input-names').value = "";
+                modal.classList.remove('hidden');
+            };
+
+            document.getElementById('btn-edit-group').onclick = function() {
+                const group = getActiveGroup();
+                document.getElementById('modal-title').textContent = "Redigera Grupp";
+                document.getElementById('modal-edit-id').value = group.id;
+                document.getElementById('modal-input-name').value = group.name;
+                document.getElementById('modal-input-names').value = group.names.join(', ');
+                modal.classList.remove('hidden');
+            };
+
+            document.getElementById('btn-delete-group').onclick = function() {
+                if (appData.groups.length <= 1) {
+                    alert("Du måste ha minst en grupp kvar!");
+                    return;
+                }
+                const group = getActiveGroup();
+                if (confirm(`Radera ${group.name}?`)) {
+                    appData.groups = appData.groups.filter(g => g.id !== group.id);
+                    appData.activeId = appData.groups[0].id;
+                    saveData();
+                    render();
+                }
+            };
+
+            document.getElementById('btn-close-modal').onclick = closeModal;
+            document.getElementById('btn-cancel-modal').onclick = closeModal;
+
+            document.getElementById('btn-save-modal').onclick = function() {
+                const editId = document.getElementById('modal-edit-id').value;
+                const name = document.getElementById('modal-input-name').value.trim();
+                const rawNames = document.getElementById('modal-input-names').value;
+
+                if (!name) return alert("Ange gruppnamn!");
+                const parsed = rawNames.split(/[\n,]+/).map(n => n.trim()).filter(n => n.length > 0);
+                if (parsed.length === 0) return alert("Ange minst ett namn!");
+
+                if (editId) {
+                    const g = appData.groups.find(x => x.id === editId);
+                    if (g) { g.name = name; g.names = parsed; }
+                } else {
+                    const newId = 'grp_' + Date.now();
+                    appData.groups.push({ id: newId, name: name, names: parsed });
+                    appData.activeId = newId;
+                }
+
+                saveData();
+                render();
+                closeModal();
+            };
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+    </script>
+
+</body>
+</html>
