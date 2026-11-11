@@ -95,7 +95,7 @@
                         </button>
                     </div>
 
-                    <!-- DISKRET ENBART IKON/GUBBE FÖR REGLER -->
+                    <!-- DISKRET REGLER (GUBBE) -->
                     <div class="flex justify-between items-center px-1">
                         <button id="btn-toggle-rules-panel" title="Regler" class="p-1.5 text-slate-600 hover:text-indigo-400 transition-colors rounded-lg">
                             <i class="fa-solid fa-user-lock text-sm"></i>
@@ -116,7 +116,6 @@
                             </button>
                         </div>
 
-                        <!-- LÄGG TILL REGLER -->
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                             <select id="rule-student-1" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200">
                                 <option value="">-- Välj Elev 1 --</option>
@@ -227,17 +226,17 @@
         </div>
     </div>
 
-    <!-- EGEN MODAL FÖR RADERING (SÄKER I GOOGLE SITES IFRAME) -->
-    <div id="delete-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+    <!-- EGEN MODAL FÖR BEKRÄFTELSE / ANVÄNDS BÅDE FÖR RADERA OCH ÅTERSTÄLL -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 text-center space-y-4">
-            <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto text-xl">
+            <div id="confirm-modal-icon" class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto text-xl">
                 <i class="fa-solid fa-trash-can"></i>
             </div>
-            <h3 class="font-bold text-white text-base">Radera grupp?</h3>
-            <p id="delete-modal-msg" class="text-xs text-slate-400">Är du säker på att du vill radera denna grupp?</p>
+            <h3 id="confirm-modal-title" class="font-bold text-white text-base">Bekräfta</h3>
+            <p id="confirm-modal-msg" class="text-xs text-slate-400">Är du säker?</p>
             <div class="flex gap-2 pt-2">
-                <button id="btn-cancel-delete" class="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">Avbryt</button>
-                <button id="btn-confirm-delete" class="flex-1 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-500">Radera</button>
+                <button id="btn-confirm-cancel" class="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">Avbryt</button>
+                <button id="btn-confirm-ok" class="flex-1 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-500">Ja, fortsätt</button>
             </div>
         </div>
     </div>
@@ -258,6 +257,8 @@
             rulesMap: {}
         };
 
+        let confirmCallback = null;
+
         const selectGroup = document.getElementById('select-group');
         const activeGroupLabel = document.getElementById('active-group-label');
         const studentsList = document.getElementById('students-list');
@@ -269,7 +270,7 @@
         const winnerBox = document.getElementById('winner-box');
         const winnerName = document.getElementById('winner-name');
         const modal = document.getElementById('modal');
-        const deleteModal = document.getElementById('delete-modal');
+        const confirmModal = document.getElementById('confirm-modal');
 
         window.onload = function() {
             loadData();
@@ -278,7 +279,7 @@
         };
 
         function loadData() {
-            const saved = localStorage.getItem('namnslump_testklass_data_v7');
+            const saved = localStorage.getItem('namnslump_testklass_data_v8');
             if (saved) {
                 try { appData = JSON.parse(saved); } catch(e) {}
             }
@@ -292,7 +293,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('namnslump_testklass_data_v7', JSON.stringify(appData));
+            localStorage.setItem('namnslump_testklass_data_v8', JSON.stringify(appData));
         }
 
         function getActiveGroup() {
@@ -415,6 +416,13 @@
             });
         }
 
+        function showCustomConfirm(title, msg, onOk) {
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-msg').textContent = msg;
+            confirmCallback = onOk;
+            confirmModal.classList.remove('hidden');
+        }
+
         function setupEventListeners() {
             document.getElementById('btn-tab-spin').onclick = function() {
                 document.getElementById('section-spin').classList.remove('hidden');
@@ -454,7 +462,7 @@
                 const type = document.getElementById('rule-type').value;
 
                 if (!s1 || !s2 || s1 === s2) {
-                    alert("Välj två olika elever!");
+                    showCustomConfirm("Regelfel", "Välj två olika elever i listan.", null);
                     return;
                 }
 
@@ -490,12 +498,12 @@
                 let pool = noRepeat ? presentNames.filter(n => !drawn.includes(n)) : [...presentNames];
                 
                 if (presentNames.length === 0) {
-                    alert("Inga elever är markerade som närvarande!");
+                    showCustomConfirm("Inga elever", "Inga elever är markerade som närvarande!", null);
                     return;
                 }
 
                 if (pool.length === 0) {
-                    alert("Alla närvarande elever har dragits i den här omgången!");
+                    showCustomConfirm("Omgången klar", "Alla närvarande elever har dragits! Klicka på nollställ-knappen för att börja om.", null);
                     return;
                 }
 
@@ -531,17 +539,22 @@
                 render();
             };
 
+            // ÅTERSTÄLL MED EGEN POPUP
             document.getElementById('btn-reset-default').onclick = function() {
-                if (confirm("Vill du nollställa till standard Testklass (28 påhittade namn)?")) {
-                    appData.groups = [{ id: 'testklass', name: 'Testklass', names: [...CLASS_TEST] }];
-                    appData.activeId = 'testklass';
-                    appData.drawnMap = {};
-                    appData.absentMap = {};
-                    appData.rulesMap = {};
-                    winnerBox.classList.add('hidden');
-                    saveData();
-                    render();
-                }
+                showCustomConfirm(
+                    "Återställ standardgrupp?", 
+                    "Vill du nollställa till Testklass med 28 påhittade namn?",
+                    function() {
+                        appData.groups = [{ id: 'testklass', name: 'Testklass', names: [...CLASS_TEST] }];
+                        appData.activeId = 'testklass';
+                        appData.drawnMap = {};
+                        appData.absentMap = {};
+                        appData.rulesMap = {};
+                        winnerBox.classList.add('hidden');
+                        saveData();
+                        render();
+                    }
+                );
             };
 
             document.getElementById('btn-make-subgroups').onclick = function() {
@@ -552,7 +565,7 @@
                 let names = group.names.filter(n => !absent.includes(n));
                 
                 if (names.length === 0) {
-                    alert("Inga elever är markerade som närvarande för att bilda grupper!");
+                    showCustomConfirm("Inga elever", "Inga elever är markerade som närvarande för att bilda grupper!", null);
                     return;
                 }
 
@@ -599,7 +612,7 @@
                 }
 
                 if (!bestGroups) {
-                    alert("Det gick inte att uppfylla alla regler med valt antal grupper. Prova att ändra antalet grupper eller ta bort någon regel.");
+                    showCustomConfirm("Regelkonflikt", "Det gick inte att uppfylla alla regler med valt antal grupper. Ändra antalet grupper eller ta bort en regel.", null);
                     return;
                 }
 
@@ -631,35 +644,44 @@
                 modal.classList.remove('hidden');
             };
 
-            // ÖPPNA POP-UP FÖR RADERING (SÄKER I IFRAME)
+            // RADERA MED EGEN POPUP
             document.getElementById('btn-delete-group').onclick = function() {
                 if (appData.groups.length <= 1) {
-                    alert("Du måste ha minst en grupp kvar i appen!");
+                    showCustomConfirm("Kan inte radera", "Du måste ha minst en grupp kvar i appen!", null);
                     return;
                 }
                 const group = getActiveGroup();
-                document.getElementById('delete-modal-msg').textContent = `Är du säker på att du vill radera "${group.name}"?`;
-                deleteModal.classList.remove('hidden');
+                showCustomConfirm(
+                    "Radera grupp?", 
+                    `Är du säker på att du vill radera "${group.name}"?`,
+                    function() {
+                        appData.groups = appData.groups.filter(g => g.id !== group.id);
+                        delete appData.drawnMap[group.id];
+                        delete appData.absentMap[group.id];
+                        delete appData.rulesMap[group.id];
+
+                        appData.activeId = appData.groups[0].id;
+                        winnerBox.classList.add('hidden');
+                        reelDisplay.textContent = "Redo!";
+
+                        saveData();
+                        render();
+                    }
+                );
             };
 
-            document.getElementById('btn-cancel-delete').onclick = function() {
-                deleteModal.classList.add('hidden');
+            // BEKRÄFTA-KNAPPAR FÖR MODAL
+            document.getElementById('btn-confirm-cancel').onclick = function() {
+                confirmModal.classList.add('hidden');
+                confirmCallback = null;
             };
 
-            document.getElementById('btn-confirm-delete').onclick = function() {
-                const group = getActiveGroup();
-                appData.groups = appData.groups.filter(g => g.id !== group.id);
-                delete appData.drawnMap[group.id];
-                delete appData.absentMap[group.id];
-                delete appData.rulesMap[group.id];
-
-                appData.activeId = appData.groups[0].id;
-                winnerBox.classList.add('hidden');
-                reelDisplay.textContent = "Redo!";
-
-                saveData();
-                render();
-                deleteModal.classList.add('hidden');
+            document.getElementById('btn-confirm-ok').onclick = function() {
+                confirmModal.classList.add('hidden');
+                if (confirmCallback) {
+                    confirmCallback();
+                    confirmCallback = null;
+                }
             };
 
             document.getElementById('btn-close-modal').onclick = closeModal;
@@ -670,9 +692,15 @@
                 const name = document.getElementById('modal-input-name').value.trim();
                 const rawNames = document.getElementById('modal-input-names').value;
 
-                if (!name) return alert("Ange gruppnamn!");
+                if (!name) {
+                    showCustomConfirm("Saknar namn", "Ange ett gruppnamn!", null);
+                    return;
+                }
                 const parsed = rawNames.split(/[\n,]+/).map(n => n.trim()).filter(n => n.length > 0);
-                if (parsed.length === 0) return alert("Ange minst ett namn!");
+                if (parsed.length === 0) {
+                    showCustomConfirm("Saknar elever", "Ange minst ett elevnamn!", null);
+                    return;
+                }
 
                 if (editId) {
                     const g = appData.groups.find(x => x.id === editId);
