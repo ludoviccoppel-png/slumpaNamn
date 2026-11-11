@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NamnSlumparen - Klass 7B</title>
+    <title>NamnSlumparen - Testklass</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -28,7 +28,7 @@
             </div>
             <div class="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-sm">
                 <span class="text-slate-400">Aktiv grupp: </span>
-                <span id="active-group-label" class="font-bold text-amber-300">Klass 7B</span>
+                <span id="active-group-label" class="font-bold text-amber-300">Testklass</span>
             </div>
         </header>
 
@@ -95,6 +95,52 @@
                         </button>
                     </div>
 
+                    <!-- DISKRET ENBART IKON/GUBBE FÖR REGLER -->
+                    <div class="flex justify-between items-center px-1">
+                        <button id="btn-toggle-rules-panel" title="Regler" class="p-1.5 text-slate-600 hover:text-indigo-400 transition-colors rounded-lg">
+                            <i class="fa-solid fa-user-lock text-sm"></i>
+                        </button>
+                        <span id="rules-active-indicator" class="hidden text-[11px] text-emerald-400 font-semibold">
+                            <i class="fa-solid fa-circle-check"></i> Regler aktiva vid gruppering
+                        </span>
+                    </div>
+
+                    <!-- DOLD REGPANEL -->
+                    <div id="rules-panel" class="hidden bg-slate-950/90 border border-indigo-900/50 rounded-2xl p-4 space-y-3">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <h3 class="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved"></i> Gruppregler (Visas ej för klassen)
+                            </h3>
+                            <button id="btn-hide-rules-panel" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded-lg">
+                                Göm alla regler
+                            </button>
+                        </div>
+
+                        <!-- LÄGG TILL REGLER -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                            <select id="rule-student-1" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200">
+                                <option value="">-- Välj Elev 1 --</option>
+                            </select>
+
+                            <select id="rule-type" class="bg-slate-900 border border-slate-800 rounded-lg p-2 font-bold text-amber-300">
+                                <option value="TOGETHER">🤝 Ska vara i samma grupp</option>
+                                <option value="APART">🚫 Får inte vara i samma grupp</option>
+                            </select>
+
+                            <select id="rule-student-2" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200">
+                                <option value="">-- Välj Elev 2 --</option>
+                            </select>
+                        </div>
+
+                        <button id="btn-add-rule" class="w-full bg-slate-800 hover:bg-slate-700 text-xs text-indigo-300 font-bold py-2 rounded-xl border border-slate-700">
+                            + Spara regel
+                        </button>
+
+                        <div id="rules-list" class="space-y-1.5 pt-2 border-t border-slate-900">
+                        </div>
+                    </div>
+
+                    <!-- GRUPP-RESULTAT -->
                     <div id="subgroups-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
                 </div>
 
@@ -133,7 +179,7 @@
                 </div>
 
                 <button id="btn-reset-default" class="w-full bg-slate-950 hover:bg-slate-800 text-slate-400 text-xs py-2 rounded-xl border border-slate-800">
-                    Återställ standardgrupp (7B - 28 namn)
+                    Återställ standardgrupp (Testklass - 28 namn)
                 </button>
 
                 <div class="pt-3 border-t border-slate-800 space-y-2">
@@ -166,7 +212,7 @@
 
             <div>
                 <label class="text-xs text-slate-400 block mb-1">Gruppnamn</label>
-                <input type="text" id="modal-input-name" placeholder="Ex. Klass 7B" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm">
+                <input type="text" id="modal-input-name" placeholder="Ex. Testklass" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm">
             </div>
 
             <div>
@@ -182,13 +228,19 @@
     </div>
 
     <script>
-        const CLASS_7B = ["Abduqodir", "Anashid", "Axel", "Lam", "Cecilia", "Elias", "Elise", "Emil", "Havin", "Henry", "Jack", "Jonathan", "Khadijatou", "Kseniya", "Laleh", "Leo", "Lily", "Marlon", "Maximilian", "Mikael", "Nellie", "Ninjin", "Shams", "Sixten B", "Sixten F", "Timmy", "Vera", "Vincent"];
+        const CLASS_TEST = [
+            "Alexander", "Beata", "Casper", "Diana", "Eskil", "Filippa", "Gabriel", 
+            "Hannah", "Isak", "Jasmine", "Karl", "Linnea", "Matteo", "Nora", 
+            "Oliver", "Petra", "Rasmus", "Stella", "Theodor", "Ulrika", "Viktor", 
+            "Wilma", "Xander", "Ylva", "Zack", "Åsa", "Örjan", "Alva"
+        ];
 
         let appData = {
             groups: [],
             activeId: null,
             drawnMap: {},
-            absentMap: {} // Håller koll på frånvarande elever per grupp
+            absentMap: {},
+            rulesMap: {}
         };
 
         const selectGroup = document.getElementById('select-group');
@@ -210,20 +262,21 @@
         };
 
         function loadData() {
-            const saved = localStorage.getItem('namnslump_7b_data_v2');
+            const saved = localStorage.getItem('namnslump_testklass_data_v5');
             if (saved) {
                 try { appData = JSON.parse(saved); } catch(e) {}
             }
             if (!appData.groups || appData.groups.length === 0) {
-                appData.groups = [{ id: '7b', name: 'Klass 7B', names: [...CLASS_7B] }];
-                appData.activeId = '7b';
+                appData.groups = [{ id: 'testklass', name: 'Testklass', names: [...CLASS_TEST] }];
+                appData.activeId = 'testklass';
                 appData.drawnMap = {};
                 appData.absentMap = {};
+                appData.rulesMap = {};
             }
         }
 
         function saveData() {
-            localStorage.setItem('namnslump_7b_data_v2', JSON.stringify(appData));
+            localStorage.setItem('namnslump_testklass_data_v5', JSON.stringify(appData));
         }
 
         function getActiveGroup() {
@@ -286,6 +339,64 @@
             presentStudentsCount.textContent = presentStudents.length;
             countRemaining.textContent = remainingPresent.length;
             countDrawn.textContent = drawn.length;
+
+            renderRuleSelectors();
+            renderRulesList();
+        }
+
+        function renderRuleSelectors() {
+            const group = getActiveGroup();
+            const s1 = document.getElementById('rule-student-1');
+            const s2 = document.getElementById('rule-student-2');
+
+            s1.innerHTML = '<option value="">-- Välj Elev 1 --</option>';
+            s2.innerHTML = '<option value="">-- Välj Elev 2 --</option>';
+
+            group.names.forEach(name => {
+                const opt1 = document.createElement('option');
+                opt1.value = name; opt1.textContent = name;
+                s1.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = name; opt2.textContent = name;
+                s2.appendChild(opt2);
+            });
+        }
+
+        function renderRulesList() {
+            const group = getActiveGroup();
+            const rules = appData.rulesMap[group.id] || [];
+            const container = document.getElementById('rules-list');
+            const activeIndicator = document.getElementById('rules-active-indicator');
+
+            container.innerHTML = '';
+
+            if (rules.length > 0) {
+                activeIndicator.classList.remove('hidden');
+            } else {
+                activeIndicator.classList.add('hidden');
+            }
+
+            rules.forEach((r, idx) => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between bg-slate-900 p-2 rounded-lg text-xs border border-slate-800";
+                
+                const isTogether = r.type === 'TOGETHER';
+                row.innerHTML = `
+                    <span class="text-slate-300">
+                        <b>${r.s1}</b> ${isTogether ? '<span class="text-emerald-400 font-bold">🤝 ska vara med</span>' : '<span class="text-rose-400 font-bold">🚫 får ej vara med</span>'} <b>${r.s2}</b>
+                    </span>
+                    <button class="text-rose-400 hover:text-rose-300 font-bold px-1.5 py-0.5 rounded">×</button>
+                `;
+
+                row.querySelector('button').onclick = function() {
+                    appData.rulesMap[group.id].splice(idx, 1);
+                    saveData();
+                    renderRulesList();
+                };
+
+                container.appendChild(row);
+            });
         }
 
         function setupEventListeners() {
@@ -311,7 +422,36 @@
                 render();
             };
 
-            // Markera / avmarkera alla
+            document.getElementById('btn-toggle-rules-panel').onclick = function() {
+                const panel = document.getElementById('rules-panel');
+                panel.classList.toggle('hidden');
+            };
+
+            document.getElementById('btn-hide-rules-panel').onclick = function() {
+                document.getElementById('rules-panel').classList.add('hidden');
+            };
+
+            document.getElementById('btn-add-rule').onclick = function() {
+                const group = getActiveGroup();
+                const s1 = document.getElementById('rule-student-1').value;
+                const s2 = document.getElementById('rule-student-2').value;
+                const type = document.getElementById('rule-type').value;
+
+                if (!s1 || !s2 || s1 === s2) {
+                    alert("Välj två olika elever!");
+                    return;
+                }
+
+                if (!appData.rulesMap[group.id]) appData.rulesMap[group.id] = [];
+                appData.rulesMap[group.id].push({ s1, s2, type });
+                
+                document.getElementById('rule-student-1').value = "";
+                document.getElementById('rule-student-2').value = "";
+
+                saveData();
+                renderRulesList();
+            };
+
             document.getElementById('btn-toggle-all-presence').onclick = function() {
                 const group = getActiveGroup();
                 const absent = appData.absentMap[group.id] || [];
@@ -324,14 +464,12 @@
                 render();
             };
 
-            // Slumpa Namn (endast närvarande)
             document.getElementById('btn-spin').onclick = function() {
                 const group = getActiveGroup();
                 const drawn = appData.drawnMap[group.id] || [];
                 const absent = appData.absentMap[group.id] || [];
                 const noRepeat = document.getElementById('toggle-norepeat').checked;
                 
-                // Filtrera bort frånvarande först
                 const presentNames = group.names.filter(n => !absent.includes(n));
                 let pool = noRepeat ? presentNames.filter(n => !drawn.includes(n)) : [...presentNames];
                 
@@ -378,23 +516,23 @@
             };
 
             document.getElementById('btn-reset-default').onclick = function() {
-                if (confirm("Vill du nollställa till standard 7B (28 namn)?")) {
-                    appData.groups = [{ id: '7b', name: 'Klass 7B', names: [...CLASS_7B] }];
-                    appData.activeId = '7b';
+                if (confirm("Vill du nollställa till standard Testklass (28 påhittade namn)?")) {
+                    appData.groups = [{ id: 'testklass', name: 'Testklass', names: [...CLASS_TEST] }];
+                    appData.activeId = 'testklass';
                     appData.drawnMap = {};
                     appData.absentMap = {};
+                    appData.rulesMap = {};
                     winnerBox.classList.add('hidden');
                     saveData();
                     render();
                 }
             };
 
-            // Bygga smågrupper (endast närvarande)
             document.getElementById('btn-make-subgroups').onclick = function() {
                 const group = getActiveGroup();
                 const absent = appData.absentMap[group.id] || [];
+                const rules = appData.rulesMap[group.id] || [];
                 
-                // Endast närvarande hamnar i grupper
                 let names = group.names.filter(n => !absent.includes(n));
                 
                 if (names.length === 0) {
@@ -402,20 +540,56 @@
                     return;
                 }
 
-                names.sort(() => Math.random() - 0.5);
-
                 const mode = document.getElementById('split-mode').value;
                 const val = parseInt(document.getElementById('split-val').value) || 1;
 
                 let numGroups = mode === 'count' ? val : Math.ceil(names.length / val);
                 numGroups = Math.max(1, Math.min(numGroups, names.length));
 
-                const result = Array.from({ length: numGroups }, () => []);
-                names.forEach((name, i) => result[i % numGroups].push(name));
+                let bestGroups = null;
+                let attempts = 0;
+
+                while (attempts < 500) {
+                    attempts++;
+                    let tempNames = [...names];
+                    tempNames.sort(() => Math.random() - 0.5);
+
+                    let result = Array.from({ length: numGroups }, () => []);
+                    tempNames.forEach((name, i) => result[i % numGroups].push(name));
+
+                    let isValid = true;
+                    for (let r of rules) {
+                        if (absent.includes(r.s1) || absent.includes(r.s2)) continue;
+
+                        const g1 = result.findIndex(g => g.includes(r.s1));
+                        const g2 = result.findIndex(g => g.includes(r.s2));
+
+                        if (g1 !== -1 && g2 !== -1) {
+                            if (r.type === 'TOGETHER' && g1 !== g2) {
+                                isValid = false;
+                                break;
+                            }
+                            if (r.type === 'APART' && g1 === g2) {
+                                isValid = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isValid) {
+                        bestGroups = result;
+                        break;
+                    }
+                }
+
+                if (!bestGroups) {
+                    alert("Det gick inte att uppfylla alla regler med valt antal grupper. Prova att ändra antalet grupper eller ta bort någon regel.");
+                    return;
+                }
 
                 const grid = document.getElementById('subgroups-grid');
                 grid.innerHTML = '';
-                result.forEach((g, idx) => {
+                bestGroups.forEach((g, idx) => {
                     const card = document.createElement('div');
                     card.className = "bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs";
                     card.innerHTML = `<div class="font-bold text-amber-400 mb-1">Grupp ${idx + 1} (${g.length})</div>` + 
