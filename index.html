@@ -227,6 +227,21 @@
         </div>
     </div>
 
+    <!-- EGEN MODAL FÖR RADERING (SÄKER I GOOGLE SITES IFRAME) -->
+    <div id="delete-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 text-center space-y-4">
+            <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="font-bold text-white text-base">Radera grupp?</h3>
+            <p id="delete-modal-msg" class="text-xs text-slate-400">Är du säker på att du vill radera denna grupp?</p>
+            <div class="flex gap-2 pt-2">
+                <button id="btn-cancel-delete" class="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">Avbryt</button>
+                <button id="btn-confirm-delete" class="flex-1 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-500">Radera</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const CLASS_TEST = [
             "Alexander", "Beata", "Casper", "Diana", "Eskil", "Filippa", "Gabriel", 
@@ -254,6 +269,7 @@
         const winnerBox = document.getElementById('winner-box');
         const winnerName = document.getElementById('winner-name');
         const modal = document.getElementById('modal');
+        const deleteModal = document.getElementById('delete-modal');
 
         window.onload = function() {
             loadData();
@@ -262,7 +278,7 @@
         };
 
         function loadData() {
-            const saved = localStorage.getItem('namnslump_testklass_data_v6');
+            const saved = localStorage.getItem('namnslump_testklass_data_v7');
             if (saved) {
                 try { appData = JSON.parse(saved); } catch(e) {}
             }
@@ -276,7 +292,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('namnslump_testklass_data_v6', JSON.stringify(appData));
+            localStorage.setItem('namnslump_testklass_data_v7', JSON.stringify(appData));
         }
 
         function getActiveGroup() {
@@ -615,28 +631,35 @@
                 modal.classList.remove('hidden');
             };
 
-            // RÄTTAD RADERA-FUNKTION
+            // ÖPPNA POP-UP FÖR RADERING (SÄKER I IFRAME)
             document.getElementById('btn-delete-group').onclick = function() {
                 if (appData.groups.length <= 1) {
                     alert("Du måste ha minst en grupp kvar i appen!");
                     return;
                 }
                 const group = getActiveGroup();
-                if (confirm(`Är du säker på att du vill radera gruppen "${group.name}"?`)) {
-                    // Ta bort gruppen och tillhörande data
-                    appData.groups = appData.groups.filter(g => g.id !== group.id);
-                    delete appData.drawnMap[group.id];
-                    delete appData.absentMap[group.id];
-                    delete appData.rulesMap[group.id];
+                document.getElementById('delete-modal-msg').textContent = `Är du säker på att du vill radera "${group.name}"?`;
+                deleteModal.classList.remove('hidden');
+            };
 
-                    // Sätt första kvarvarande grupp som aktiv
-                    appData.activeId = appData.groups[0].id;
-                    winnerBox.classList.add('hidden');
-                    reelDisplay.textContent = "Redo!";
+            document.getElementById('btn-cancel-delete').onclick = function() {
+                deleteModal.classList.add('hidden');
+            };
 
-                    saveData();
-                    render();
-                }
+            document.getElementById('btn-confirm-delete').onclick = function() {
+                const group = getActiveGroup();
+                appData.groups = appData.groups.filter(g => g.id !== group.id);
+                delete appData.drawnMap[group.id];
+                delete appData.absentMap[group.id];
+                delete appData.rulesMap[group.id];
+
+                appData.activeId = appData.groups[0].id;
+                winnerBox.classList.add('hidden');
+                reelDisplay.textContent = "Redo!";
+
+                saveData();
+                render();
+                deleteModal.classList.add('hidden');
             };
 
             document.getElementById('btn-close-modal').onclick = closeModal;
