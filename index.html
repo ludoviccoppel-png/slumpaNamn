@@ -175,7 +175,7 @@
 
                 <div class="flex gap-2">
                     <button id="btn-edit-group" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-bold py-2 rounded-xl">Redigera</button>
-                    <button id="btn-delete-group" class="bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold px-3 py-2 rounded-xl">Radera</button>
+                    <button id="btn-delete-group" class="bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold px-3 py-2 rounded-xl cursor-pointer">Radera</button>
                 </div>
 
                 <button id="btn-reset-default" class="w-full bg-slate-950 hover:bg-slate-800 text-slate-400 text-xs py-2 rounded-xl border border-slate-800">
@@ -262,7 +262,7 @@
         };
 
         function loadData() {
-            const saved = localStorage.getItem('namnslump_testklass_data_v5');
+            const saved = localStorage.getItem('namnslump_testklass_data_v6');
             if (saved) {
                 try { appData = JSON.parse(saved); } catch(e) {}
             }
@@ -276,7 +276,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('namnslump_testklass_data_v5', JSON.stringify(appData));
+            localStorage.setItem('namnslump_testklass_data_v6', JSON.stringify(appData));
         }
 
         function getActiveGroup() {
@@ -615,15 +615,25 @@
                 modal.classList.remove('hidden');
             };
 
+            // RÄTTAD RADERA-FUNKTION
             document.getElementById('btn-delete-group').onclick = function() {
                 if (appData.groups.length <= 1) {
-                    alert("Du måste ha minst en grupp kvar!");
+                    alert("Du måste ha minst en grupp kvar i appen!");
                     return;
                 }
                 const group = getActiveGroup();
-                if (confirm(`Radera ${group.name}?`)) {
+                if (confirm(`Är du säker på att du vill radera gruppen "${group.name}"?`)) {
+                    // Ta bort gruppen och tillhörande data
                     appData.groups = appData.groups.filter(g => g.id !== group.id);
+                    delete appData.drawnMap[group.id];
+                    delete appData.absentMap[group.id];
+                    delete appData.rulesMap[group.id];
+
+                    // Sätt första kvarvarande grupp som aktiv
                     appData.activeId = appData.groups[0].id;
+                    winnerBox.classList.add('hidden');
+                    reelDisplay.textContent = "Redo!";
+
                     saveData();
                     render();
                 }
